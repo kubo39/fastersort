@@ -23,9 +23,11 @@ template MergeSortImpl(alias pred, R)
     {
         if (r.length >= 2 && less(r[1], r[0]))
         {
-            auto tmp = r[0]; // Copy the first element.
+            // Copy the first element.
+            auto tmp = r[0];
             auto dest = &r[1];
             memcpy(&r[0], &r[1], T.sizeof);
+            // Iterate until the right place for it is found.
             foreach (i; 2 .. r.length)
             {
                 if (greaterEqual(r[i], tmp))
@@ -33,6 +35,7 @@ template MergeSortImpl(alias pred, R)
                 memcpy(&r[i - 1], &r[i], T.sizeof);
                 dest = &r[i];
             }
+            // Copies tmp to dest.
             memcpy(dest, &tmp, T.sizeof);
         }
     }
@@ -40,7 +43,9 @@ template MergeSortImpl(alias pred, R)
     // Merge r[0 .. mid] and r[mid .. $] using buf as temporary storage.
     void merge()(R r, size_t mid, T* buf)
     {
-        const n = r.length;
+        assert(T.sizeof != 0);
+
+        immutable n = r.length;
         auto arrMid = r.ptr + mid;
         auto arrEnd = r.ptr + n;
 
@@ -64,6 +69,7 @@ template MergeSortImpl(alias pred, R)
             return --*ptr;
         }
 
+        // Copies the shorter run into buf.
         if (mid <= n - mid)
         {
             // The left run is shorter.
@@ -103,7 +109,6 @@ template MergeSortImpl(alias pred, R)
                 memcpy(decrementAndGet(&out_), toCopy, T.sizeof);
             }
         }
-        assert(T.sizeof != 0);
         memcpy(hole.dest, hole.start, (hole.end - hole.start) * T.sizeof);
     }
 
@@ -118,16 +123,19 @@ template MergeSortImpl(alias pred, R)
         if (T.sizeof == 0)
             return;
 
-        const n = r.length;
+        immutable n = r.length;
 
         if (n <= MINIMUL_MERGE)
         {
+            // insertion sort.
             if (n >= 2)
                 foreach_reverse (i; 0 .. n-1)
                     insertHead(r[i .. $]);
             return;
         }
 
+        // Allocate temporary buffer to copy shorter run.
+        // Which will always have length at most n / 2.
         auto buf = uninitializedArray!(T[])(n / 2);
 
         struct Run
@@ -156,6 +164,9 @@ template MergeSortImpl(alias pred, R)
                         start--;
             }
 
+            // Optimization:
+            // Insert some more elements into the run
+            // if it's too short.
             while (start > 0 && end - start < MIN_RUN)
             {
                 start--;
@@ -165,6 +176,7 @@ template MergeSortImpl(alias pred, R)
             runs ~= Run(start, end - start);
             end = start;
 
+            // Examines the stack of runs and identifies the next pair of runs to merge.
             size_t collapse(Run[] runs)
             {
                 const n = runs.length;
@@ -202,8 +214,10 @@ template MergeSortImpl(alias pred, R)
     }
 }
 
+// Stable sort, that is faster than stdlib's Tim sort.
+// This algorithm is based on Python's object sort and Rust's std::sort.
 auto fastersort(alias less = "a < b", SwapStrategy ss = SwapStrategy.stable,
-          Range)(Range r)
+                Range)(Range r)
     if ((ss != SwapStrategy.unstable && hasAssignableElements!Range) &&
         isRandomAccessRange!Range &&
         hasSlicing!Range &&
