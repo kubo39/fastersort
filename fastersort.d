@@ -42,8 +42,9 @@ template MergeSortImpl(alias pred, R)
 
     // Merge r[0 .. mid] and r[mid .. $] using buf as temporary storage.
     void merge()(R r, size_t mid, T* buf)
+    in { assert(T.sizeof != 0); }
+    do
     {
-        static assert(T.sizeof != 0);
 
         immutable n = r.length;
         auto arrMid = r.ptr + mid;
