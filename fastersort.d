@@ -24,9 +24,9 @@ template MergeSortImpl(alias pred, R)
         if (r.length >= 2 && less(r[1], r[0]))
         {
             // Copy the first element.
-            auto tmp = r[0];
+            const tmp = r[0];
             auto dest = &r[1];
-            memcpy(&r[0], &r[1], T.sizeof);
+            memcpy(&r[0], dest, T.sizeof);
             // Iterate until the right place for it is found.
             foreach (i; 2 .. r.length)
             {
@@ -43,7 +43,7 @@ template MergeSortImpl(alias pred, R)
     // Merge r[0 .. mid] and r[mid .. $] using buf as temporary storage.
     void merge()(R r, size_t mid, T* buf)
     {
-        assert(T.sizeof != 0);
+        static assert(T.sizeof != 0);
 
         immutable n = r.length;
         auto arrMid = r.ptr + mid;
@@ -117,8 +117,8 @@ template MergeSortImpl(alias pred, R)
         import std.algorithm : reverse, remove;
         import std.array : uninitializedArray;
 
-        const MINIMUL_MERGE = 20;
-        const MIN_RUN = 10;
+        enum MINIMUL_MERGE = 20;
+        enum MIN_RUN = 10;
 
         if (T.sizeof == 0)
             return;
