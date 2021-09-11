@@ -227,12 +227,9 @@ auto fastersort(alias less = "a < b", SwapStrategy ss = SwapStrategy.stable,
     alias lessFun = binaryFun!less;
     alias LessRet = typeof(lessFun(r.front, r.front));
     static if (is(LessRet == bool))
-    {
-        static if (ss == SwapStrategy.stable)
-            MergeSortImpl!(lessFun, Range).sort(r);
-        else static assert (false);
-    }
-    else static assert (false);
+        MergeSortImpl!(lessFun, Range).sort(r);
+    else
+        static assert (false);
 }
 
 unittest
